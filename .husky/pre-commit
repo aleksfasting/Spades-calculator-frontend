@@ -1,1 +1,0 @@
-npm run lint:staged && npm run unit && npm run e2e:headless && npm run build

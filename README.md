@@ -14,13 +14,11 @@ _note: This is a frontend-only application built with Vite. The development serv
 
 ## Running Tests
 
-To run the end-to-end (e2e) tests using Cypress, open your terminal in the project's root directory and execute:
+To run unit tests:
 
 ```bash
-npx cypress open
+npm run unit
 ```
-
-This will launch the Cypress Test Runner, where you can select and run your tests visually.
 
 ## Linting
 

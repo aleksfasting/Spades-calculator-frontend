@@ -129,19 +129,6 @@ Use descriptive kebab-case names that indicate what aspect is being tested:
 
 ---
 
-## E2E Test Files (Cypress)
-
-### Pattern: `featureName.cy.js`
-
-**Examples:**
-- `dealerRotationFlow.cy.js`
-- `newGameFlow.cy.js`
-- `pastRoundEditing.cy.js`
-- `offline.cy.js`
-
-**Rationale:** Cypress convention uses `.cy.js` suffix; camelCase used for consistency with project style.
-
----
 
 ## File Extensions
 
@@ -184,8 +171,6 @@ src/
     ├── integration/    # Integration tests (kebab-case.test.jsx)
     └── *.test.js(x)    # Unit tests (match source file naming)
 
-cypress/
-└── e2e/               # E2E tests (kebab-case.cy.js)
 ```
 
 ---

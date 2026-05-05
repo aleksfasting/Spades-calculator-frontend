@@ -49,25 +49,6 @@ npm run e2e
 - ✅ Localhost detection
 - ✅ Unregistration functionality
 
-### 2. E2E Tests
-
-#### PWA Functionality Tests (`cypress/e2e/pwa.cy.js`)
-
-- ✅ Service worker registration
-- ✅ Offline functionality
-- ✅ App installation features
-- ✅ Cache management
-- ✅ Performance and loading
-- ✅ Error handling
-- ✅ Cross-browser compatibility
-
-#### Offline Page Tests (`cypress/e2e/offline.cy.js`)
-
-- ✅ Offline page display
-- ✅ Navigation and retry functionality
-- ✅ Content and accessibility
-- ✅ Integration with service worker
-- ✅ Performance metrics
 
 ## 🧪 Manual Testing
 

@@ -233,23 +233,6 @@ export default [
     }
   },
   {
-    files: ['cypress/**/*.{js,jsx,ts,tsx}'],
-    languageOptions: {
-      ecmaVersion: 'latest',
-      sourceType: 'module',
-      globals: {
-        cy: 'readonly',
-        Cypress: 'readonly',
-        window: 'readonly',
-        document: 'readonly',
-        console: 'readonly',
-      }
-    },
-    rules: {
-      'no-unused-expressions': 'off',
-    }
-  },
-  {
     files: ['tests/**/*.{js,jsx,ts,tsx}'],
     languageOptions: {
       ecmaVersion: 'latest',
