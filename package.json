@@ -16,6 +16,7 @@
   "dependencies": {
     "@chakra-ui/react": "^3.31.0",
     "@emotion/react": "^11.14.0",
+    "@supabase/supabase-js": "^2.105.3",
     "browserslist": "^4.25.2",
     "caniuse-lite": "^1.0.30001734",
     "formik": "^2.2.9",

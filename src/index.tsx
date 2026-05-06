@@ -6,6 +6,7 @@ import { StateProvider } from './helpers';
 import './index.css';
 import HomePage from './pages/HomePage';
 import SpadesCalculator from './pages/SpadesCalculator';
+import Leaderboard from './pages/Leaderboard';
 
 import { Toaster } from './components/ui/toaster';
 
@@ -17,6 +18,10 @@ const router = createBrowserRouter([
   {
     path: 'spades-calculator',
     element: <SpadesCalculator />,
+  },
+  {
+    path: 'leaderboard',
+    element: <Leaderboard />,
   },
 ]);
 

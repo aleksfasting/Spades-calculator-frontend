@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Flex, Box, Text, IconButton, Stack } from './';
-import { Menu as MenuIcon, Settings, Download, RotateCcw } from 'lucide-react';
-import { SettingsModal, WarningModal } from '../modals';
+import { Menu as MenuIcon, Settings, Download, RotateCcw, Trophy, BarChart2 } from 'lucide-react';
+import { SettingsModal, WarningModal, RecordRankedGameModal } from '../modals';
 import { usePWAInstall } from '../../helpers/utils/usePWAInstall';
 import { useNavigate } from 'react-router-dom';
 import { useContext } from 'react';
@@ -18,6 +18,7 @@ const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isWarningModalOpen, setIsWarningModalOpen] = useState(false);
+  const [isRankedModalOpen, setIsRankedModalOpen] = useState(false);
   const { roundHistory, currentRound, setRoundHistory, resetCurrentRound } =
     useContext(GlobalContext);
   const { handleInstallClick, isInstalled } = usePWAInstall();
@@ -119,6 +120,41 @@ const Header = () => {
                 px={4}
                 py={3}
                 align="center"
+                cursor={roundHistory.length > 0 ? 'pointer' : 'not-allowed'}
+                opacity={roundHistory.length > 0 ? 1 : 0.4}
+                _hover={{ bg: roundHistory.length > 0 ? 'whiteAlpha.100' : undefined }}
+                onClick={
+                  roundHistory.length > 0
+                    ? () => {
+                        setIsRankedModalOpen(true);
+                        setIsMenuOpen(false);
+                      }
+                    : undefined
+                }
+                gap={3}
+              >
+                <Trophy size={18} />
+                <Text fontSize="md">Record as Ranked</Text>
+              </Flex>
+              <Flex
+                px={4}
+                py={3}
+                align="center"
+                cursor="pointer"
+                _hover={{ bg: 'whiteAlpha.100' }}
+                onClick={() => {
+                  navigate('/leaderboard');
+                  setIsMenuOpen(false);
+                }}
+                gap={3}
+              >
+                <BarChart2 size={18} />
+                <Text fontSize="md">Leaderboard</Text>
+              </Flex>
+              <Flex
+                px={4}
+                py={3}
+                align="center"
                 cursor="pointer"
                 _hover={{ bg: 'whiteAlpha.100' }}
                 onClick={handleSettingsClick}
@@ -150,6 +186,11 @@ const Header = () => {
       <WarningModal
         isOpen={isWarningModalOpen}
         setIsModalOpen={setIsWarningModalOpen}
+      />
+      <RecordRankedGameModal
+        isOpen={isRankedModalOpen}
+        onClose={() => setIsRankedModalOpen(false)}
+        roundHistory={roundHistory}
       />
     </Box>
   );

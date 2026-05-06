@@ -130,3 +130,7 @@ export interface TeamColorStyle {
   color: string;
   borderColor: string;
 }
+
+// ─── ELO / Ranked Game ────────────────────────────────────────────────────
+
+export type RankedGameOutcome = 'win' | 'loss' | 'draw';

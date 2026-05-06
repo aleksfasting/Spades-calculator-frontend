@@ -22,3 +22,4 @@ export * from './dialog';
 export * from './editable';
 export * from './field';
 export * from './badge';
+export * from './spinner';
