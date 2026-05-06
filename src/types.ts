@@ -133,4 +133,4 @@ export interface TeamColorStyle {
 
 // ─── ELO / Ranked Game ────────────────────────────────────────────────────
 
-export type RankedGameOutcome = 'win' | 'loss' | 'draw';
+export type RankedGameOutcome = 'WIN' | 'LOSS' | 'draw';

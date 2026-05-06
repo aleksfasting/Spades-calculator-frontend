@@ -1,4 +1,4 @@
-export type GameOutcome = 'win' | 'loss' | 'draw';
+export type GameOutcome = 'WIN' | 'LOSS' | 'draw';
 
 export interface PlayerRating {
   id: string;

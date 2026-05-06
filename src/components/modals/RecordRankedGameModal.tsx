@@ -131,9 +131,9 @@ function RecordRankedGameModal({
       );
 
       const team1Outcome: RankedGameOutcome =
-        t1Score > t2Score ? 'win' : t1Score < t2Score ? 'loss' : 'draw';
+        t1Score > t2Score ? 'WIN' : t1Score < t2Score ? 'LOSS' : 'draw';
       const team2Outcome: RankedGameOutcome =
-        t1Score > t2Score ? 'loss' : t1Score < t2Score ? 'win' : 'draw';
+        t1Score > t2Score ? 'LOSS' : t1Score < t2Score ? 'WIN' : 'draw';
 
       await recordRankedGame({
         team1PlayerIds: [names.t1p1Name, names.t1p2Name],
