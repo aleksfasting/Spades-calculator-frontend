@@ -44,6 +44,7 @@ function PlayerNameInput({
           name={id}
           data-cy={id + 'Input'}
           fontSize="lg"
+          autoComplete="off"
         />
       </Field>
     </div>

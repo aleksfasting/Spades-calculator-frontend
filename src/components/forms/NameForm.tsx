@@ -48,8 +48,16 @@ function NameForm() {
     validationSchema,
     enableReinitialize: true,
     onSubmit: (values) => {
-      setNames(values);
-      navigate('/spades-calculator', { state: values });
+      const lowerCaseValues = {
+        team1Name: values.team1Name,
+        team2Name: values.team2Name,
+        t1p1Name: values.t1p1Name.toLowerCase(),
+        t2p1Name: values.t2p1Name.toLowerCase(),
+        t1p2Name: values.t1p2Name.toLowerCase(),
+        t2p2Name: values.t2p2Name.toLowerCase(),
+      }
+      setNames(lowerCaseValues);
+      navigate('/spades-calculator', { state: lowerCaseValues });
     },
   });
 
@@ -96,7 +104,7 @@ function NameForm() {
             teamClassName="team1"
             id="t1p2Name"
             label="Partner"
-            placeholder=""
+            placeholder="Opposite"
             playerName={formik.values.t1p2Name}
             errors={formik.errors.t1p2Name}
             touched={formik.touched.t1p2Name}
@@ -128,7 +136,7 @@ function NameForm() {
             teamClassName="team2"
             id="t2p2Name"
             label="Right Opponent"
-            placeholder=""
+            placeholder="Right Opponent"
             playerName={formik.values.t2p2Name}
             errors={formik.errors.t2p2Name}
             touched={formik.touched.t2p2Name}
