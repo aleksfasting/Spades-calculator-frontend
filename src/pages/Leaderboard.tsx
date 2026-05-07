@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Container, Box, Flex, Text, Badge, Spinner, Button } from '../components/ui';
+import { Container, Box, Flex, Text, Spinner, Button } from '../components/ui';
 import Header from '../components/ui/Header';
 import { getPlayers } from '../services';
 import type { Player } from '../services';
@@ -101,11 +101,6 @@ function Leaderboard() {
                     <Text fontWeight={isCurrentPlayer ? 'bold' : 'normal'}>
                       {player.id}
                     </Text>
-                    {isCurrentPlayer && (
-                      <Badge colorPalette="green" size="sm">
-                        you
-                      </Badge>
-                    )}
                   </Flex>
                   <Text
                     fontWeight="semibold"
