@@ -1,5 +1,3 @@
-export { default as InstallPrompt } from './InstallPrompt';
-export { default as DownloadButton } from './DownloadButton';
 export { default as AppModal } from './AppModal';
 export { default as DealerTag } from './DealerTag';
 

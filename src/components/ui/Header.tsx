@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { Flex, Box, Text, IconButton, Stack } from './';
-import { Menu as MenuIcon, Settings, Download, RotateCcw, Trophy, BarChart2 } from 'lucide-react';
+import { Menu as MenuIcon, Settings, RotateCcw, Trophy, BarChart2 } from 'lucide-react';
 import { SettingsModal, WarningModal, RecordRankedGameModal } from '../modals';
-import { usePWAInstall } from '../../helpers/utils/usePWAInstall';
 import { useNavigate } from 'react-router-dom';
 import { useContext } from 'react';
 import { GlobalContext } from '../../helpers/context/GlobalContext';
@@ -21,7 +20,6 @@ const Header = () => {
   const [isRankedModalOpen, setIsRankedModalOpen] = useState(false);
   const { roundHistory, currentRound, setRoundHistory, resetCurrentRound } =
     useContext(GlobalContext);
-  const { handleInstallClick, isInstalled } = usePWAInstall();
 
   const names = getNames() ?? initialNames;
   const hasAnyData =
@@ -32,11 +30,6 @@ const Header = () => {
 
   const handleSettingsClick = () => {
     setIsSettingsOpen(true);
-    setIsMenuOpen(false);
-  };
-
-  const handleDownloadClick = () => {
-    handleInstallClick();
     setIsMenuOpen(false);
   };
 
@@ -163,20 +156,6 @@ const Header = () => {
                 <Settings size={18} />
                 <Text fontSize="md">Settings</Text>
               </Flex>
-              {!isInstalled && (
-                <Flex
-                  px={4}
-                  py={3}
-                  align="center"
-                  cursor="pointer"
-                  _hover={{ bg: 'whiteAlpha.100' }}
-                  onClick={handleDownloadClick}
-                  gap={3}
-                >
-                  <Download size={18} />
-                  <Text fontSize="md">Offline Download</Text>
-                </Flex>
-              )}
             </Stack>
           </Box>
         </>
