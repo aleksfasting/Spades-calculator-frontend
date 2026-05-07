@@ -8,17 +8,6 @@ interface Navigator {
   brave?: {
     isBrave: () => Promise<boolean>;
   };
-  /** BeforeInstallPromptEvent outcome */
-  userChoice?: Promise<{ outcome: 'accepted' | 'dismissed' }>;
-}
-
-interface BeforeInstallPromptEvent extends Event {
-  readonly platforms: string[];
-  readonly userChoice: Promise<{
-    outcome: 'accepted' | 'dismissed';
-    platform: string;
-  }>;
-  prompt(): Promise<void>;
 }
 
 interface FeatureFlagEvent extends CustomEvent {
@@ -26,11 +15,6 @@ interface FeatureFlagEvent extends CustomEvent {
     key: string;
     value: boolean;
   };
-}
-
-interface WindowEventMap {
-  beforeinstallprompt: BeforeInstallPromptEvent;
-  'feature-flag-changed': FeatureFlagEvent;
 }
 
 declare module 'virtual:pwa-register/react' {

@@ -61,7 +61,6 @@ export default [
         Text: 'readonly',
         DocumentFragment: 'readonly',
         ImageData: 'readonly',
-        BeforeInstallPromptEvent: 'readonly',
         FeatureFlagEvent: 'readonly',
         React: 'readonly',
         caches: 'readonly',
@@ -176,7 +175,6 @@ export default [
         Element: 'readonly',
         Text: 'readonly',
         DocumentFragment: 'readonly',
-        BeforeInstallPromptEvent: 'readonly',
       }
     },
     plugins: {
