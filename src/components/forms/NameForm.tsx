@@ -51,10 +51,10 @@ function NameForm() {
       const lowerCaseValues = {
         team1Name: values.team1Name,
         team2Name: values.team2Name,
-        t1p1Name: values.t1p1Name.toLowerCase(),
-        t2p1Name: values.t2p1Name.toLowerCase(),
-        t1p2Name: values.t1p2Name.toLowerCase(),
-        t2p2Name: values.t2p2Name.toLowerCase(),
+        t1p1Name: values.t1p1Name.toLowerCase().trim(),
+        t2p1Name: values.t2p1Name.toLowerCase().trim(),
+        t1p2Name: values.t1p2Name.toLowerCase().trim(),
+        t2p2Name: values.t2p2Name.toLowerCase().trim(),
       }
       setNames(lowerCaseValues);
       navigate('/spades-calculator', { state: lowerCaseValues });
