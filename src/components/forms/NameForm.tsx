@@ -5,10 +5,12 @@ import * as Yup from 'yup';
 import { useLocalStorage } from '../../helpers/utils/hooks';
 import { GlobalContext } from '../../helpers/context/GlobalContext';
 import WarningModal from '../modals/WarningModal';
+import NewPlayersWarningModal from '../modals/NewPlayersWarningModal';
 import {
   hasPlayerNamesEntered,
   hasRoundProgress,
 } from '../../helpers/math/spadesMath';
+import { getPlayersByIds } from '../../services';
 
 import { TeamNameInput, PlayerNameInput } from './';
 import { Button, SimpleGrid, Center } from '../ui';
@@ -19,6 +21,9 @@ function NameForm() {
   const navigate = useNavigate();
   const { roundHistory, currentRound } = useContext(GlobalContext);
   const [isWarningModalOpen, setIsWarningModalOpen] = useState(false);
+  const [isNewPlayersModalOpen, setIsNewPlayersModalOpen] = useState(false);
+  const [newPlayerNames, setNewPlayerNames] = useState<string[]>([]);
+  const [pendingNavValues, setPendingNavValues] = useState<Names | null>(null);
   const [names, setNames] = useLocalStorage<Names>('names', initialNames);
 
   const hasGameData =
@@ -47,7 +52,7 @@ function NameForm() {
     },
     validationSchema,
     enableReinitialize: true,
-    onSubmit: (values) => {
+    onSubmit: async (values) => {
       const lowerCaseValues = {
         team1Name: values.team1Name,
         team2Name: values.team2Name,
@@ -55,11 +60,42 @@ function NameForm() {
         t2p1Name: values.t2p1Name.toLowerCase().trim(),
         t1p2Name: values.t1p2Name.toLowerCase().trim(),
         t2p2Name: values.t2p2Name.toLowerCase().trim(),
+      };
+      const playerIds = [
+        lowerCaseValues.t1p1Name,
+        lowerCaseValues.t2p1Name,
+        lowerCaseValues.t1p2Name,
+        lowerCaseValues.t2p2Name,
+      ];
+      try {
+        const existingPlayers = await getPlayersByIds(playerIds);
+        const existingIds = new Set(existingPlayers.map((p) => p.id));
+        const newNames = playerIds.filter((id) => !existingIds.has(id));
+        if (newNames.length > 0) {
+          setPendingNavValues(lowerCaseValues);
+          setNewPlayerNames(newNames);
+          setIsNewPlayersModalOpen(true);
+          return;
+        }
+      } catch {
+        // Supabase unavailable — proceed without warning
       }
       setNames(lowerCaseValues);
       navigate('/spades-calculator', { state: lowerCaseValues });
     },
   });
+
+  const handleNewPlayersGoBack = () => {
+    setIsNewPlayersModalOpen(false);
+    setPendingNavValues(null);
+  };
+
+  const handleNewPlayersContinue = () => {
+    if (!pendingNavValues) return;
+    setNames(pendingNavValues);
+    setIsNewPlayersModalOpen(false);
+    navigate('/spades-calculator', { state: pendingNavValues });
+  };
 
   const { values, setFieldValue } = formik;
   const { team1Name, team2Name } = values;
@@ -74,6 +110,12 @@ function NameForm() {
   }, [team1Name, team2Name, setFieldValue]);
   return (
     <>
+      <NewPlayersWarningModal
+        isOpen={isNewPlayersModalOpen}
+        onClose={handleNewPlayersGoBack}
+        onContinue={handleNewPlayersContinue}
+        newPlayerNames={newPlayerNames}
+      />
       <WarningModal
         isOpen={isWarningModalOpen}
         setIsModalOpen={setIsWarningModalOpen}
