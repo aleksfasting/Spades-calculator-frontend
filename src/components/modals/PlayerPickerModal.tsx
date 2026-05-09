@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import AppModal from '../ui/AppModal';
-import { Button, Flex, Input, Stack } from '../ui';
+import { Box, Button, Flex, Input, Stack } from '../ui';
 import type { SavedPlayer } from '../../types';
 import { normalizePlayerName } from '../../helpers/utils/playerPool';
 
@@ -69,9 +69,15 @@ function PlayerPickerModal({
       isOpen={isOpen}
       onClose={handleClose}
       title="Choose player"
-      bodyStyle={{ p: 4 }}
+      bodyStyle={{
+        p: 4,
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+        minH: 0,
+      }}
     >
-      <Stack gap={3}>
+      <Stack gap={3} flex="1" minH={0} overflow="hidden">
         {adding && (
           <Stack gap={2}>
             <Input
@@ -94,33 +100,42 @@ function PlayerPickerModal({
           </Stack>
         )}
 
-        <Stack
-          gap={1}
-          maxH={PLAYER_LIST_MAX_HEIGHT}
+        <Box
+          role="listbox"
+          aria-label="Players"
+          flex="1"
           minH={0}
+          maxH={PLAYER_LIST_MAX_HEIGHT}
           overflowY="auto"
+          overscrollBehavior="contain"
+          css={{
+            WebkitOverflowScrolling: 'touch',
+            touchAction: 'pan-y',
+          }}
         >
-          {sortedPlayers.map((p) => {
-            const norm = normalizePlayerName(p.displayName);
-            const taken = excluded.has(norm);
-            return (
-              <Button
-                key={p.id}
-                variant="ghost"
-                justifyContent="flex-start"
-                disabled={taken}
-                opacity={taken ? 0.4 : 1}
-                onClick={() => {
-                  if (taken) return;
-                  onPick(p);
-                  handleClose(false);
-                }}
-              >
-                {p.displayName}
-              </Button>
-            );
-          })}
-        </Stack>
+          <Stack gap={1}>
+            {sortedPlayers.map((p) => {
+              const norm = normalizePlayerName(p.displayName);
+              const taken = excluded.has(norm);
+              return (
+                <Button
+                  key={p.id}
+                  variant="ghost"
+                  justifyContent="flex-start"
+                  disabled={taken}
+                  opacity={taken ? 0.4 : 1}
+                  onClick={() => {
+                    if (taken) return;
+                    onPick(p);
+                    handleClose(false);
+                  }}
+                >
+                  {p.displayName}
+                </Button>
+              );
+            })}
+          </Stack>
+        </Box>
         <Flex justify="flex-end" align="center">
           {!adding && (
             <Button variant="outline" size="sm" onClick={() => setAdding(true)}>
