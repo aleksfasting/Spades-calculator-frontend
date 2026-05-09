@@ -6,7 +6,7 @@ import type { EloResult, PlayerRating } from '../../helpers/math/eloMath';
 import { getPlayersByIds, recordRankedGame } from '../../services';
 import { getNames, getNilSetting } from '../../helpers/utils/storage';
 import { TEAM1, TEAM2 } from '../../helpers/utils/constants';
-import type { Round, RankedGameOutcome } from '../../types';
+import type { Round } from '../../types';
 
 interface RecordRankedGameModalProps {
   isOpen: boolean;
@@ -130,18 +130,12 @@ function RecordRankedGameModal({
         t2Score,
       );
 
-      const team1Outcome: RankedGameOutcome =
-        t1Score > t2Score ? 'WIN' : t1Score < t2Score ? 'LOSS' : 'draw';
-      const team2Outcome: RankedGameOutcome =
-        t1Score > t2Score ? 'LOSS' : t1Score < t2Score ? 'WIN' : 'draw';
-
       await recordRankedGame({
         team1PlayerIds: [names.t1p1Name, names.t1p2Name],
         team2PlayerIds: [names.t2p1Name, names.t2p2Name],
-        team1Outcome,
-        team2Outcome,
-        team1EloResults: team1Results,
-        team2EloResults: team2Results,
+        team1NewRatings: [team1Results[0].ratingAfter, team1Results[1].ratingAfter],
+        team2NewRatings: [team2Results[0].ratingAfter, team2Results[1].ratingAfter],
+        roundHistory,
       });
 
       setStatus('success');

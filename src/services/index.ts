@@ -1,20 +1,18 @@
 import { supabase } from './supabaseClient';
-import type { EloResult, GameOutcome } from '../helpers/math/eloMath';
+import { convertBidToDbValue } from '../helpers/math/spadesMath';
+import type { Round } from '../types';
 
 export interface Player {
   id: string;
   rating: number;
-  createdAt: string;
-  updatedAt: string;
 }
 
 export interface RecordRankedGameArgs {
   team1PlayerIds: [string, string];
   team2PlayerIds: [string, string];
-  team1Outcome: GameOutcome;
-  team2Outcome: GameOutcome;
-  team1EloResults: [EloResult, EloResult];
-  team2EloResults: [EloResult, EloResult];
+  team1NewRatings: [number, number];
+  team2NewRatings: [number, number];
+  roundHistory: Round[];
 }
 
 export async function getPlayers(): Promise<Player[]> {
@@ -40,12 +38,7 @@ export async function getPlayersByIds(ids: string[]): Promise<Player[]> {
 }
 
 export async function recordRankedGame(args: RecordRankedGameArgs): Promise<void> {
-  const {
-    team1Outcome,
-    team2Outcome,
-    team1EloResults,
-    team2EloResults,
-  } = args;
+  const { team1PlayerIds, team2PlayerIds, team1NewRatings, team2NewRatings, roundHistory } = args;
 
   const { data: game, error: gameError } = await supabase
     .from('games')
@@ -56,49 +49,36 @@ export async function recordRankedGame(args: RecordRankedGameArgs): Promise<void
   if (gameError) throw new Error(gameError.message);
   const gameId = (game as { id: string }).id;
 
-  const allResults = [...team1EloResults, ...team2EloResults];
   const { error: playerError } = await supabase.from('players').upsert(
-    allResults.map((r) => ({
-      id: r.playerId,
-      rating: r.ratingAfter,
-      updatedAt: new Date().toISOString(),
-    })),
+    [
+      { id: team1PlayerIds[0], rating: team1NewRatings[0] },
+      { id: team1PlayerIds[1], rating: team1NewRatings[1] },
+      { id: team2PlayerIds[0], rating: team2NewRatings[0] },
+      { id: team2PlayerIds[1], rating: team2NewRatings[1] },
+    ],
     { onConflict: 'id' },
   );
 
   if (playerError) throw new Error(playerError.message);
 
-  const participants = [
-    ...team1EloResults.map((r) =>
-      buildParticipantRow(r, gameId, 'team1', team1Outcome),
-    ),
-    ...team2EloResults.map((r) =>
-      buildParticipantRow(r, gameId, 'team2', team2Outcome),
-    ),
-  ];
+  const rounds = roundHistory.map((round, idx) => ({
+    game_id: gameId,
+    round_nr: idx + 1,
+    t1p1: team1PlayerIds[0],
+    t1p2: team1PlayerIds[1],
+    t2p1: team2PlayerIds[0],
+    t2p2: team2PlayerIds[1],
+    t1p1_bid: convertBidToDbValue(round.team1BidsAndActuals.p1Bid),
+    t1p2_bid: convertBidToDbValue(round.team1BidsAndActuals.p2Bid),
+    t2p1_bid: convertBidToDbValue(round.team2BidsAndActuals.p1Bid),
+    t2p2_bid: convertBidToDbValue(round.team2BidsAndActuals.p2Bid),
+    t1p1_actual: Number(round.team1BidsAndActuals.p1Actual),
+    t1p2_actual: Number(round.team1BidsAndActuals.p2Actual),
+    t2p1_actual: Number(round.team2BidsAndActuals.p1Actual),
+    t2p2_actual: Number(round.team2BidsAndActuals.p2Actual),
+  }));
 
-  const { error: participantError } = await supabase
-    .from('game_participants')
-    .insert(participants);
+  const { error: roundsError } = await supabase.from('rounds').insert(rounds);
 
-  if (participantError) throw new Error(participantError.message);
-}
-
-function buildParticipantRow(
-  result: EloResult,
-  gameId: string,
-  team: 'team1' | 'team2',
-  outcome: GameOutcome,
-) {
-  return {
-    gameId,
-    playerId: result.playerId,
-    team,
-    outcome,
-    ratingBefore: result.ratingBefore,
-    ratingAfter: result.ratingAfter,
-    ratingDelta: result.ratingDelta,
-    expectedScore: result.expectedScore,
-    kFactor: result.kFactor,
-  };
+  if (roundsError) throw new Error(roundsError.message);
 }

@@ -582,3 +582,10 @@ export const hasRoundProgress = (
 
   return hasTeam1Progress || hasTeam2Progress;
 };
+
+export function convertBidToDbValue(bid: InputValue): number | null {
+  if (bid === BLIND_NIL) return -1;
+  if (bid === NIL) return 0;
+  if (bid === '') return null;
+  return typeof bid === 'number' ? bid : parseInt(bid, 10);
+}
