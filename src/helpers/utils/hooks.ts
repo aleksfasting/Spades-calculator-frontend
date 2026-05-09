@@ -7,7 +7,7 @@ import {
   calculateTeamScoreFromRoundHistory,
   calculateRoundScore,
 } from '../math/spadesMath';
-import { TEAM1, TEAM2 } from './constants';
+import { TEAM1, TEAM2, normalizeNames } from './constants';
 
 import type {
   Names,
@@ -35,8 +35,13 @@ export function useLocalStorage<T>(
         window.localStorage.setItem(key, JSON.stringify(initialValue));
         return initialValue;
       }
-      // if localStorage does exist, then return stored localStorage value
-      return JSON.parse(item);
+      const parsed = JSON.parse(item);
+      if (key === 'names') {
+        const normalized = normalizeNames(parsed as Names);
+        window.localStorage.setItem(key, JSON.stringify(normalized));
+        return normalized as T;
+      }
+      return parsed;
     } catch (error) {
       // If error also return initialValue
       console.error(error);
@@ -48,8 +53,11 @@ export function useLocalStorage<T>(
   const setValue = (value: T | ((val: T) => T)) => {
     try {
       // Allow value to be a function so we have same API as useState
-      const valueToStore =
+      let valueToStore =
         value instanceof Function ? value(storedValue) : value;
+      if (key === 'names') {
+        valueToStore = normalizeNames(valueToStore as Names) as T;
+      }
       // Save state
       setStoredValue(valueToStore);
       // Save to local storage

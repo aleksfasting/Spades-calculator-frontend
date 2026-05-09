@@ -557,13 +557,7 @@ export const hasPlayerNamesEntered = (names: Names | null) => {
     't2p1Name',
     't2p2Name',
   ];
-  const hasPlayerNames = playerFields.some(
-    (field) => names[field] && names[field] !== '',
-  );
-  const hasCustomTeamNames =
-    (names.team1Name && names.team1Name !== 'Team 1') ||
-    (names.team2Name && names.team2Name !== 'Team 2');
-  return hasPlayerNames || hasCustomTeamNames;
+  return playerFields.some((field) => names[field] && names[field] !== '');
 };
 
 export const hasRoundProgress = (
