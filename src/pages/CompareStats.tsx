@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import {
   BarChart,
   Bar,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   ResponsiveContainer,
@@ -12,8 +14,8 @@ import {
 } from 'recharts';
 import { Container, Box, Flex, Text, Spinner, Button } from '../components/ui';
 import Header from '../components/ui/Header';
-import { getPlayers, getAllRounds } from '../services';
-import type { Player, DbRound } from '../services';
+import { getPlayers, getAllRounds, getAllGames } from '../services';
+import type { Player, DbRound, DbGame } from '../services';
 import { computePlayerStats } from '../helpers/math/playerStats';
 import type { PlayerStats } from '../helpers/math/playerStats';
 
@@ -26,6 +28,21 @@ const CHART_PURPLE = '#B794F4';
 
 const CHART_MARGIN = { top: 20, right: 8, bottom: 0, left: -10 };
 const AXIS_TICK_COLOR = '#718096';
+
+const RANK_COLORS = [
+  '#FFD700', // 1st – gold
+  '#A8A9AD', // 2nd – silver
+  '#CD7F32', // 3rd – bronze
+  '#63B3ED', // 4th
+  '#68D391', // 5th
+  '#F6AD55', // 6th
+  '#B794F4', // 7th
+  '#FC8181', // 8th
+  '#4FD1C5', // 9th
+  '#F687B3', // 10th
+];
+const RANK_ORDINALS = ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th'];
+const RANK_GRAY = '#718096';
 
 type SortKey =
   | 'name'
@@ -283,19 +300,129 @@ function pct(n: number | null): string {
   return n !== null ? `${n}%` : '—';
 }
 
+const TOP_N = 10;
+
+function buildRankingTimeline(
+  games: DbGame[],
+  players: Player[],
+): Array<Record<string, number>> {
+  if (games.length === 0) return [];
+
+  const lastKnown = new Map<string, number>();
+  players.forEach((p) => lastKnown.set(p.id, 1200));
+  games.forEach((g) => {
+    [g.t1p1, g.t1p2, g.t2p1, g.t2p2].forEach((id) => {
+      if (id && !lastKnown.has(id)) lastKnown.set(id, 1200);
+    });
+  });
+
+  const snapshots: Array<Record<string, number>> = [];
+
+  for (const game of games) {
+    const time = new Date(game.createdAt).getTime();
+    if (game.t1p1 && game.t1p1_before_rating != null)
+      lastKnown.set(game.t1p1, game.t1p1_before_rating);
+    if (game.t1p2 && game.t1p2_before_rating != null)
+      lastKnown.set(game.t1p2, game.t1p2_before_rating);
+    if (game.t2p1 && game.t2p1_before_rating != null)
+      lastKnown.set(game.t2p1, game.t2p1_before_rating);
+    if (game.t2p2 && game.t2p2_before_rating != null)
+      lastKnown.set(game.t2p2, game.t2p2_before_rating);
+
+    const sorted = [...lastKnown.entries()].sort((a, b) => b[1] - a[1]);
+    const point: Record<string, number> = { time };
+    sorted.slice(0, TOP_N).forEach(([id], idx) => {
+      point[id] = idx + 1;
+    });
+    snapshots.push(point);
+  }
+
+  // Final snapshot: current ratings from players table (after last game)
+  const currentRatingMap = new Map(players.map((p) => [p.id, p.rating]));
+  const allIds = new Set([...lastKnown.keys(), ...currentRatingMap.keys()]);
+  const finalRatings = new Map<string, number>();
+  allIds.forEach((id) => {
+    finalRatings.set(id, currentRatingMap.get(id) ?? lastKnown.get(id) ?? 1200);
+  });
+  const finalSorted = [...finalRatings.entries()].sort((a, b) => b[1] - a[1]);
+  const finalPoint: Record<string, number> = { time: Date.now() };
+  finalSorted.slice(0, TOP_N).forEach(([id], idx) => {
+    finalPoint[id] = idx + 1;
+  });
+  snapshots.push(finalPoint);
+
+  return snapshots;
+}
+
+interface RankTooltipProps {
+  active?: boolean;
+  payload?: Array<{ dataKey: string; value: number | undefined }>;
+  label?: number;
+  colorForPlayer: (id: string) => string;
+}
+
+function RankTooltip({ active, payload, label, colorForPlayer }: RankTooltipProps) {
+  if (!active || !payload || label == null) return null;
+
+  const entries = payload
+    .filter((p) => p.value !== undefined)
+    .sort((a, b) => (a.value ?? 99) - (b.value ?? 99));
+
+  const dateStr = new Date(label).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+
+  return (
+    <Box
+      bg="gray.800"
+      border="1px solid"
+      borderColor="whiteAlpha.200"
+      borderRadius="md"
+      p={3}
+      fontSize="xs"
+      minW="160px"
+    >
+      <Text color="gray.400" mb={2}>
+        {dateStr}
+      </Text>
+      {entries.map((entry) => (
+        <Flex key={entry.dataKey} align="center" gap={2} mb={1}>
+          <Box
+            w={2}
+            h={2}
+            borderRadius="full"
+            flexShrink={0}
+            style={{ background: colorForPlayer(entry.dataKey) }}
+          />
+          <Text color="gray.300" flex={1}>
+            {entry.dataKey}
+          </Text>
+          <Text color="white" fontWeight="bold">
+            {RANK_ORDINALS[(entry.value ?? 1) - 1] ?? `${entry.value}th`}
+          </Text>
+        </Flex>
+      ))}
+    </Box>
+  );
+}
+
 function CompareStats() {
   const navigate = useNavigate();
   const [players, setPlayers] = useState<Player[]>([]);
   const [allRounds, setAllRounds] = useState<DbRound[]>([]);
+  const [allGames, setAllGames] = useState<DbGame[]>([]);
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [sortKey, setSortKey] = useState<SortKey>('rating');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
   useEffect(() => {
-    Promise.all([getPlayers(), getAllRounds()])
-      .then(([playerData, roundData]) => {
+    Promise.all([getPlayers(), getAllRounds(), getAllGames()])
+      .then(([playerData, roundData, gameData]) => {
         setPlayers(playerData);
         setAllRounds(roundData);
+        setAllGames(gameData);
         setStatus('success');
       })
       .catch(() => setStatus('error'));
@@ -318,6 +445,51 @@ function CompareStats() {
     () => sortRows(chartRows, sortKey, sortDir),
     [chartRows, sortKey, sortDir],
   );
+
+  // players is already sorted by rating desc from getPlayers()
+  const currentRankMap = useMemo(
+    () => new Map(players.map((p, idx) => [p.id, idx])),
+    [players],
+  );
+
+  const colorForPlayer = (id: string): string => {
+    const rank = currentRankMap.get(id);
+    return rank !== undefined && rank < RANK_COLORS.length ? RANK_COLORS[rank] : RANK_GRAY;
+  };
+
+  const ribbonData = useMemo(
+    () => (status === 'success' ? buildRankingTimeline(allGames, players) : []),
+    [allGames, players, status],
+  );
+
+  const topPlayerIds = useMemo(() => {
+    const ids = new Set<string>();
+    ribbonData.forEach((point) => {
+      Object.keys(point).forEach((key) => {
+        if (key !== 'time') ids.add(key);
+      });
+    });
+    return [...ids].sort((a, b) => {
+      const ra = currentRankMap.get(a) ?? Infinity;
+      const rb = currentRankMap.get(b) ?? Infinity;
+      return ra !== rb ? ra - rb : a.localeCompare(b);
+    });
+  }, [ribbonData, currentRankMap]);
+
+  const dayTicks = useMemo(() => {
+    if (ribbonData.length < 2) return [];
+    const start = ribbonData[0].time;
+    const end = ribbonData[ribbonData.length - 1].time;
+    const ticks: number[] = [];
+    const d = new Date(start);
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() + 1);
+    while (d.getTime() <= end) {
+      ticks.push(d.getTime());
+      d.setDate(d.getDate() + 1);
+    }
+    return ticks;
+  }, [ribbonData]);
 
   const cd = useMemo(
     () => ({
@@ -447,6 +619,82 @@ function CompareStats() {
 
         {status === 'success' && chartRows.length > 0 && (
           <Flex direction="column" gap={4}>
+            {/* ── Ranking Progression ── */}
+            <ChartCard
+              title="Ranking Progression"
+              legend={topPlayerIds.map((id) => ({ color: colorForPlayer(id), label: id }))}
+            >
+              {ribbonData.length < 2 ? (
+                <NoData message="Not enough games to show progression" />
+              ) : (
+                <ResponsiveContainer width="100%" height={500}>
+                  <LineChart
+                    data={ribbonData}
+                    margin={{ top: 16, right: 16, bottom: 48, left: 8 }}
+                  >
+                    <XAxis
+                      dataKey="time"
+                      type="number"
+                      scale="time"
+                      domain={['dataMin', 'dataMax']}
+                      ticks={dayTicks}
+                      tickFormatter={(ts: number) =>
+                        new Date(ts).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                        })
+                      }
+                      tick={{ fill: AXIS_TICK_COLOR, fontSize: 10 }}
+                      axisLine={false}
+                      tickLine={false}
+                      angle={-30}
+                      textAnchor="end"
+                      height={52}
+                    />
+                    <YAxis
+                      reversed={true}
+                      domain={[0.5, 10.5]}
+                      ticks={[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}
+                      tickFormatter={(r: number) => RANK_ORDINALS[r - 1] ?? `${r}th`}
+                      tick={{ fill: AXIS_TICK_COLOR, fontSize: 10 }}
+                      axisLine={false}
+                      tickLine={false}
+                      width={36}
+                    />
+                    <Tooltip
+                      content={(props) => (
+                        <RankTooltip
+                          active={props.active}
+                          payload={
+                            props.payload as Array<{
+                              dataKey: string;
+                              value: number | undefined;
+                            }>
+                          }
+                          label={props.label as number}
+                          colorForPlayer={colorForPlayer}
+                        />
+                      )}
+                      cursor={{ stroke: 'rgba(255,255,255,0.08)', strokeWidth: 1 }}
+                    />
+                    {topPlayerIds.map((id) => (
+                      <Line
+                        key={id}
+                        dataKey={id}
+                        type="monotone"
+                        stroke={colorForPlayer(id)}
+                        strokeWidth={3}
+                        dot={false}
+                        activeDot={{ r: 4, strokeWidth: 0 }}
+                        connectNulls={false}
+                        isAnimationActive={false}
+                      />
+                    ))}
+                  </LineChart>
+                </ResponsiveContainer>
+              )}
+            </ChartCard>
+
             {/* ── Game Wins / Losses ── */}
             <ChartCard
               title="Game Wins & Losses"

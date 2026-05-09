@@ -146,3 +146,27 @@ export async function getPlayerRounds(playerId: string): Promise<DbRound[]> {
   if (error) throw new Error(error.message);
   return ((data as RoundWithGame[]) ?? []).map(flattenRound);
 }
+
+export interface DbGame {
+  id: string;
+  createdAt: string;
+  t1p1: string | null;
+  t1p2: string | null;
+  t2p1: string | null;
+  t2p2: string | null;
+  t1p1_before_rating: number | null;
+  t1p2_before_rating: number | null;
+  t2p1_before_rating: number | null;
+  t2p2_before_rating: number | null;
+}
+
+export async function getAllGames(): Promise<DbGame[]> {
+  const { data, error } = await supabase
+    .from('games')
+    .select(
+      'id, createdAt, t1p1, t1p2, t2p1, t2p2, t1p1_before_rating, t1p2_before_rating, t2p1_before_rating, t2p2_before_rating',
+    )
+    .order('createdAt', { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data as DbGame[]) ?? [];
+}
