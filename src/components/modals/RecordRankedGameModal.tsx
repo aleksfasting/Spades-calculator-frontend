@@ -133,6 +133,14 @@ function RecordRankedGameModal({
       await recordRankedGame({
         team1PlayerIds: [names.t1p1Name, names.t1p2Name],
         team2PlayerIds: [names.t2p1Name, names.t2p2Name],
+        team1BeforeRatings: [
+          ratingsMap[names.t1p1Name] ?? 1200,
+          ratingsMap[names.t1p2Name] ?? 1200,
+        ],
+        team2BeforeRatings: [
+          ratingsMap[names.t2p1Name] ?? 1200,
+          ratingsMap[names.t2p2Name] ?? 1200,
+        ],
         team1NewRatings: [team1Results[0].ratingAfter, team1Results[1].ratingAfter],
         team2NewRatings: [team2Results[0].ratingAfter, team2Results[1].ratingAfter],
         roundHistory,
