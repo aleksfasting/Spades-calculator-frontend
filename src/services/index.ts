@@ -1,6 +1,9 @@
 import { supabase } from './supabaseClient';
 import { convertBidToDbValue } from '../helpers/math/spadesMath';
 import type { Round } from '../types';
+import type { DbRound } from '../helpers/math/playerStats';
+
+export type { DbRound };
 
 export interface Player {
   id: string;
@@ -81,4 +84,29 @@ export async function recordRankedGame(args: RecordRankedGameArgs): Promise<void
   const { error: roundsError } = await supabase.from('rounds').insert(rounds);
 
   if (roundsError) throw new Error(roundsError.message);
+}
+
+export async function getAllRounds(): Promise<DbRound[]> {
+  const { data, error } = await supabase
+    .from('rounds')
+    .select('*')
+    .order('game_id')
+    .order('round_nr');
+
+  if (error) throw new Error(error.message);
+  return (data as DbRound[]) ?? [];
+}
+
+export async function getPlayerRounds(playerId: string): Promise<DbRound[]> {
+  const { data, error } = await supabase
+    .from('rounds')
+    .select('*')
+    .or(
+      `t1p1.eq.${playerId},t1p2.eq.${playerId},t2p1.eq.${playerId},t2p2.eq.${playerId}`,
+    )
+    .order('game_id')
+    .order('round_nr');
+
+  if (error) throw new Error(error.message);
+  return (data as DbRound[]) ?? [];
 }

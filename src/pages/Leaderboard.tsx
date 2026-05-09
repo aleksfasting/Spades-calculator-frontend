@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Container, Box, Flex, Text, Spinner, Button } from '../components/ui';
 import Header from '../components/ui/Header';
 import { getPlayers } from '../services';
 import type { Player } from '../services';
 
 function Leaderboard() {
+  const navigate = useNavigate();
   const [players, setPlayers] = useState<Player[]>([]);
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
 
@@ -32,9 +34,14 @@ function Leaderboard() {
       <Header />
 
       <Box mt={6}>
-        <Text fontSize="var(--app-font-xl)" fontWeight="bold" mb={4}>
-          Leaderboard
-        </Text>
+        <Flex align="baseline" justify="space-between" mb={4}>
+          <Text fontSize="var(--app-font-xl)" fontWeight="bold">
+            Leaderboard
+          </Text>
+          <Button variant="outline" size="sm" onClick={() => navigate('/stats')}>
+            Compare Stats
+          </Button>
+        </Flex>
 
         {status === 'loading' && (
           <Flex justify="center" py={12}>
@@ -86,6 +93,8 @@ function Leaderboard() {
                   borderBottom="1px solid"
                   borderColor="whiteAlpha.100"
                   _hover={{ bg: 'whiteAlpha.50' }}
+                  cursor="pointer"
+                  onClick={() => navigate(`/stats/${encodeURIComponent(player.id)}`)}
                 >
                   <Text w="40px" color="gray.400" fontWeight="semibold">
                     {index + 1}

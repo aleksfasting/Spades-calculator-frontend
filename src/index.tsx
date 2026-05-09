@@ -7,6 +7,8 @@ import './index.css';
 import HomePage from './pages/HomePage';
 import SpadesCalculator from './pages/SpadesCalculator';
 import Leaderboard from './pages/Leaderboard';
+import PlayerStats from './pages/PlayerStats';
+import CompareStats from './pages/CompareStats';
 
 import { Toaster } from './components/ui/toaster';
 
@@ -22,6 +24,14 @@ const router = createBrowserRouter([
   {
     path: 'leaderboard',
     element: <Leaderboard />,
+  },
+  {
+    path: 'stats',
+    element: <CompareStats />,
+  },
+  {
+    path: 'stats/:playerId',
+    element: <PlayerStats />,
   },
 ]);
 
