@@ -1,6 +1,13 @@
 import { useState } from 'react';
 import { Flex, Box, Text, IconButton, Stack } from './';
-import { Menu as MenuIcon, Settings, RotateCcw, Trophy, BarChart2 } from 'lucide-react';
+import {
+  Menu as MenuIcon,
+  Settings,
+  RotateCcw,
+  Trophy,
+  BarChart2,
+  Users,
+} from 'lucide-react';
 import { SettingsModal, WarningModal, RecordRankedGameModal } from '../modals';
 import { useNavigate } from 'react-router-dom';
 import { useContext } from 'react';
@@ -108,6 +115,21 @@ const Header = () => {
               >
                 <RotateCcw size={18} />
                 <Text fontSize="md">New Game</Text>
+              </Flex>
+              <Flex
+                px={4}
+                py={3}
+                align="center"
+                cursor="pointer"
+                _hover={{ bg: 'whiteAlpha.100' }}
+                onClick={() => {
+                  navigate('/players');
+                  setIsMenuOpen(false);
+                }}
+                gap={3}
+              >
+                <Users size={18} />
+                <Text fontSize="md">Players</Text>
               </Flex>
               <Flex
                 px={4}

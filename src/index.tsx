@@ -9,6 +9,7 @@ import SpadesCalculator from './pages/SpadesCalculator';
 import Leaderboard from './pages/Leaderboard';
 import PlayerStats from './pages/PlayerStats';
 import CompareStats from './pages/CompareStats';
+import PlayersPage from './pages/PlayersPage';
 
 import { Toaster } from './components/ui/toaster';
 
@@ -16,6 +17,10 @@ const router = createBrowserRouter([
   {
     path: '/',
     element: <HomePage />,
+  },
+  {
+    path: 'players',
+    element: <PlayersPage />,
   },
   {
     path: 'spades-calculator',
