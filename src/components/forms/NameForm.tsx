@@ -1,4 +1,5 @@
-import { useEffect, useState, useContext } from 'react';
+import { useState, useContext } from 'react';
+import type { CSSProperties } from 'react';
 import { useFormik } from 'formik';
 import { useNavigate } from 'react-router-dom';
 import * as Yup from 'yup';
@@ -12,10 +13,26 @@ import {
 } from '../../helpers/math/spadesMath';
 import { getPlayersByIds } from '../../services';
 
-import { TeamNameInput, PlayerNameInput } from './';
+import { PlayerNameInput } from './';
 import { Button, SimpleGrid, Center } from '../ui';
-import { initialNames } from '../../helpers/utils/constants';
+import {
+  initialNames,
+  normalizeNames,
+  TeamDisplayName,
+} from '../../helpers/utils/constants';
 import type { Names } from '../../types';
+
+type PlayerNamesFormValues = Pick<
+  Names,
+  't1p1Name' | 't1p2Name' | 't2p1Name' | 't2p2Name'
+>;
+
+const teamHeadingStyle: CSSProperties = {
+  fontSize: 'var(--app-font-2xl)',
+  fontWeight: 'bold',
+  textAlign: 'center',
+  width: '100%',
+};
 
 function NameForm() {
   const navigate = useNavigate();
@@ -41,10 +58,8 @@ function NameForm() {
     t2p2Name: Yup.string().required('Required'),
   });
 
-  const formik = useFormik<Names>({
+  const formik = useFormik<PlayerNamesFormValues>({
     initialValues: {
-      team1Name: names.team1Name,
-      team2Name: names.team2Name,
       t1p1Name: names.t1p1Name,
       t2p1Name: names.t2p1Name,
       t1p2Name: names.t1p2Name,
@@ -53,14 +68,14 @@ function NameForm() {
     validationSchema,
     enableReinitialize: true,
     onSubmit: async (values) => {
-      const lowerCaseValues = {
-        team1Name: values.team1Name,
-        team2Name: values.team2Name,
+      const lowerCaseValues = normalizeNames({
+        team1Name: TeamDisplayName.Team1,
+        team2Name: TeamDisplayName.Team2,
         t1p1Name: values.t1p1Name.toLowerCase().trim(),
         t2p1Name: values.t2p1Name.toLowerCase().trim(),
         t1p2Name: values.t1p2Name.toLowerCase().trim(),
         t2p2Name: values.t2p2Name.toLowerCase().trim(),
-      };
+      });
       const playerIds = [
         lowerCaseValues.t1p1Name,
         lowerCaseValues.t2p1Name,
@@ -97,17 +112,6 @@ function NameForm() {
     navigate('/spades-calculator', { state: pendingNavValues });
   };
 
-  const { values, setFieldValue } = formik;
-  const { team1Name, team2Name } = values;
-
-  useEffect(() => {
-    if (team1Name === '') {
-      setFieldValue('team1Name', 'Team 1');
-    }
-    if (team2Name === '') {
-      setFieldValue('team2Name', 'Team 2');
-    }
-  }, [team1Name, team2Name, setFieldValue]);
   return (
     <>
       <NewPlayersWarningModal
@@ -124,12 +128,9 @@ function NameForm() {
       <form onSubmit={formik.handleSubmit}>
         {/* Team 1 Section */}
         <Center mt={8} mb={2}>
-          <TeamNameInput
-            id="team1Name"
-            teamClassName="team1"
-            teamName={formik.values.team1Name}
-            handleChange={formik.handleChange}
-          />
+          <div className="team1" style={teamHeadingStyle}>
+            {TeamDisplayName.Team1}
+          </div>
         </Center>
         <SimpleGrid columns={2} gap={2}>
           <PlayerNameInput
@@ -156,12 +157,9 @@ function NameForm() {
 
         {/* Team 2 Section */}
         <Center mt={6} mb={2}>
-          <TeamNameInput
-            id="team2Name"
-            teamClassName="team2"
-            teamName={formik.values.team2Name}
-            handleChange={formik.handleChange}
-          />
+          <div className="team2" style={teamHeadingStyle}>
+            {TeamDisplayName.Team2}
+          </div>
         </Center>
         <SimpleGrid columns={2} gap={2}>
           <PlayerNameInput

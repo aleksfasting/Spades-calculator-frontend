@@ -3,6 +3,7 @@ import {
   possibleBids,
   team1Styles,
   team2Styles,
+  TeamDisplayName,
 } from './constants';
 
 import type {
@@ -46,10 +47,7 @@ export const getButtonValues = (type: 'Bid' | 'Actual') => {
 };
 
 export const getTeamStyle = (teamName: string): TeamColorStyle => {
-  const storedNames = localStorage.getItem('names');
-  if (!storedNames) return team1Styles;
-  const { team1Name } = JSON.parse(storedNames);
-  return teamName === team1Name ? team1Styles : team2Styles;
+  return teamName === TeamDisplayName.Team1 ? team1Styles : team2Styles;
 };
 
 // consider renaming

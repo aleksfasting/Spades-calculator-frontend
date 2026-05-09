@@ -1,5 +1,11 @@
 import type { Names, Round } from '../../types';
 
+/** Canonical UI labels for sides; not user-editable. */
+export enum TeamDisplayName {
+  Team1 = 'Team 1',
+  Team2 = 'Team 2',
+}
+
 export const possibleBids = [
   'Blind Nil',
   'Nil',
@@ -40,9 +46,17 @@ export const initialNames: Names = {
   t1p2Name: '',
   t2p1Name: '',
   t2p2Name: '',
-  team1Name: 'Team 1',
-  team2Name: 'Team 2',
+  team1Name: TeamDisplayName.Team1,
+  team2Name: TeamDisplayName.Team2,
 };
+
+export function normalizeNames(names: Names): Names {
+  return {
+    ...names,
+    team1Name: TeamDisplayName.Team1,
+    team2Name: TeamDisplayName.Team2,
+  };
+}
 
 export const EMPTY_ROUND: Round = {
   team1BidsAndActuals: {
