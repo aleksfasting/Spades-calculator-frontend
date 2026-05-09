@@ -13,21 +13,25 @@ import {
   Stack,
   Text,
 } from '../components/ui';
-import { useLocalStorage } from '../helpers/utils/hooks';
-import type { SavedPlayer } from '../types';
 import {
-  normalizePlayerName,
-  migrateSeedPlayerPoolFromNames,
-  getSavedPlayers,
-} from '../helpers/utils/playerPool';
+  useLocalStorage,
+  refreshSavedPlayersFromSupabase,
+} from '../helpers/utils/hooks';
+import type { SavedPlayer } from '../types';
+import { normalizePlayerName } from '../helpers/utils/playerPool';
 
 function PlayersPage() {
   const [players, setPlayers] = useLocalStorage<SavedPlayer[]>('savedPlayers', []);
   const [draftName, setDraftName] = useState('');
 
   useEffect(() => {
-    migrateSeedPlayerPoolFromNames();
-    setPlayers(getSavedPlayers());
+    let cancelled = false;
+    refreshSavedPlayersFromSupabase().then((merged) => {
+      if (!cancelled) setPlayers(merged);
+    });
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

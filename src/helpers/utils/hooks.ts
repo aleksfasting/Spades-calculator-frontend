@@ -8,6 +8,13 @@ import {
   calculateRoundScore,
 } from '../math/spadesMath';
 import { TEAM1, TEAM2, normalizeNames } from './constants';
+import { getPlayers } from '../../services';
+import { isSupabaseConfigured } from '../../services/supabaseClient';
+import {
+  migrateSeedPlayerPoolFromNames,
+  getSavedPlayers,
+  mergeRemotePlayersIntoPool,
+} from './playerPool';
 
 import type {
   Names,
@@ -15,6 +22,7 @@ import type {
   NilSetting,
   TeamKey,
   InputValue,
+  SavedPlayer,
 } from '../../types';
 
 export function useLocalStorage<T>(
@@ -260,4 +268,17 @@ export function useGameScores() {
 
     return { team1Score, team2Score };
   }, [historyScores, currentScores]);
+}
+
+/** Migrates legacy seed, then merges rows from Supabase `players` into the picker roster. */
+export async function refreshSavedPlayersFromSupabase(): Promise<SavedPlayer[]> {
+  migrateSeedPlayerPoolFromNames();
+  let local = getSavedPlayers();
+  if (!isSupabaseConfigured()) return local;
+  try {
+    const remote = await getPlayers();
+    return mergeRemotePlayersIntoPool(local, remote);
+  } catch {
+    return local;
+  }
 }

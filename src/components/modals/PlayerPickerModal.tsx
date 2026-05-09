@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import AppModal from '../ui/AppModal';
-import { Box, Button, Flex, Input, Stack } from '../ui';
+import { Button, Flex, Input, Stack } from '../ui';
 import type { SavedPlayer } from '../../types';
 import { normalizePlayerName } from '../../helpers/utils/playerPool';
 
@@ -100,15 +100,15 @@ function PlayerPickerModal({
           </Stack>
         )}
 
-        <Box
+        <div
           role="listbox"
           aria-label="Players"
-          flex="1"
-          minH={0}
-          maxH={PLAYER_LIST_MAX_HEIGHT}
-          overflowY="auto"
-          overscrollBehavior="contain"
-          css={{
+          style={{
+            flex: 1,
+            minHeight: 0,
+            maxHeight: PLAYER_LIST_MAX_HEIGHT,
+            overflowY: 'auto',
+            overscrollBehavior: 'contain',
             WebkitOverflowScrolling: 'touch',
             touchAction: 'pan-y',
           }}
@@ -135,7 +135,7 @@ function PlayerPickerModal({
               );
             })}
           </Stack>
-        </Box>
+        </div>
         <Flex justify="flex-end" align="center">
           {!adding && (
             <Button variant="outline" size="sm" onClick={() => setAdding(true)}>

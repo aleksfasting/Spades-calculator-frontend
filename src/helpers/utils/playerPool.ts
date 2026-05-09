@@ -50,6 +50,32 @@ export function migrateSeedPlayerPoolFromNames(): void {
   if (players.length) setSavedPlayers(players);
 }
 
+/** Stable id for roster rows synced from Supabase (`players.id` = normalized name). */
+function rosterIdFromDbPlayerId(norm: string): string {
+  return `db:${norm}`;
+}
+
+/** Adds Supabase `players` into local roster; keeps existing entries (same normalized name wins locally). */
+export function mergeRemotePlayersIntoPool(
+  local: SavedPlayer[],
+  remote: { id: string }[],
+): SavedPlayer[] {
+  const seen = new Set(
+    local.map((p) => normalizePlayerName(p.displayName)),
+  );
+  const next = [...local];
+  for (const r of remote) {
+    const norm = normalizePlayerName(r.id);
+    if (!norm || seen.has(norm)) continue;
+    seen.add(norm);
+    next.push({
+      id: rosterIdFromDbPlayerId(norm),
+      displayName: toDisplayNameFromNormalized(norm),
+    });
+  }
+  return next;
+}
+
 export function upsertPoolFromNormalizedNames(
   players: SavedPlayer[],
   normalizedNames: string[],

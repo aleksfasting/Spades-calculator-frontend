@@ -3,7 +3,10 @@ import type { CSSProperties } from 'react';
 import { useFormik } from 'formik';
 import { useNavigate } from 'react-router-dom';
 import * as Yup from 'yup';
-import { useLocalStorage } from '../../helpers/utils/hooks';
+import {
+  useLocalStorage,
+  refreshSavedPlayersFromSupabase,
+} from '../../helpers/utils/hooks';
 import { GlobalContext } from '../../helpers/context/GlobalContext';
 import WarningModal from '../modals/WarningModal';
 import NewPlayersWarningModal from '../modals/NewPlayersWarningModal';
@@ -23,9 +26,7 @@ import {
 } from '../../helpers/utils/constants';
 import type { Names, SavedPlayer } from '../../types';
 import {
-  migrateSeedPlayerPoolFromNames,
   normalizePlayerName,
-  getSavedPlayers,
   upsertPoolFromNormalizedNames,
   toDisplayNameFromNormalized,
 } from '../../helpers/utils/playerPool';
@@ -78,8 +79,13 @@ function NameForm() {
   const [shortcutHint, setShortcutHint] = useState<string | null>(null);
 
   useEffect(() => {
-    migrateSeedPlayerPoolFromNames();
-    setSavedPlayers(getSavedPlayers());
+    let cancelled = false;
+    refreshSavedPlayersFromSupabase().then((merged) => {
+      if (!cancelled) setSavedPlayers(merged);
+    });
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
