@@ -3,16 +3,10 @@ import { Container, Box, Flex, Text, Spinner, Button } from '../components/ui';
 import Header from '../components/ui/Header';
 import { getPlayers } from '../services';
 import type { Player } from '../services';
-import { getNames } from '../helpers/utils/storage';
 
 function Leaderboard() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
-
-  const names = getNames();
-  const currentIds = names
-    ? [names.t1p1Name, names.t1p2Name, names.t2p1Name, names.t2p2Name]
-    : [];
 
   const handleRetry = () => {
     setStatus('loading');
@@ -83,7 +77,6 @@ function Leaderboard() {
             </Flex>
 
             {players.map((player, index) => {
-              const isCurrentPlayer = currentIds.includes(player.id);
               return (
                 <Flex
                   key={player.id}
@@ -98,7 +91,7 @@ function Leaderboard() {
                     {index + 1}
                   </Text>
                   <Flex flex={1} align="center" gap={2}>
-                    <Text fontWeight={isCurrentPlayer ? 'bold' : 'normal'}>
+                    <Text fontWeight='normal'>
                       {player.id}
                     </Text>
                   </Flex>
