@@ -143,6 +143,9 @@ const Header = () => {
                     ? () => {
                         setIsRankedModalOpen(true);
                         setIsMenuOpen(false);
+                        setRoundHistory([]);
+                        resetCurrentRound();
+                        navigate('/leaderboard');
                       }
                     : undefined
                 }
