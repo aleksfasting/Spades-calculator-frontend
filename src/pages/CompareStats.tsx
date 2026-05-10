@@ -308,6 +308,8 @@ function buildRankingTimeline(
 ): Array<Record<string, number>> {
   if (games.length === 0) return [];
 
+  const currentRatingMap = new Map(players.map((p) => [p.id, p.rating]));
+
   const lastKnown = new Map<string, number>();
   players.forEach((p) => lastKnown.set(p.id, 1200));
   games.forEach((g) => {
@@ -316,18 +318,31 @@ function buildRankingTimeline(
     });
   });
 
+  // Returns the rating for playerId AFTER game at gameIdx by looking at the
+  // before_rating of their next game appearance, or current rating if last game.
+  function afterRating(gameIdx: number, playerId: string | null): number | null {
+    if (!playerId) return null;
+    for (let j = gameIdx + 1; j < games.length; j++) {
+      const g = games[j];
+      if (g.t1p1 === playerId && g.t1p1_before_rating != null) return g.t1p1_before_rating;
+      if (g.t1p2 === playerId && g.t1p2_before_rating != null) return g.t1p2_before_rating;
+      if (g.t2p1 === playerId && g.t2p1_before_rating != null) return g.t2p1_before_rating;
+      if (g.t2p2 === playerId && g.t2p2_before_rating != null) return g.t2p2_before_rating;
+    }
+    return currentRatingMap.get(playerId) ?? 1200;
+  }
+
   const snapshots: Array<Record<string, number>> = [];
 
-  for (const game of games) {
+  for (let i = 0; i < games.length; i++) {
+    const game = games[i];
     const time = new Date(game.createdAt).getTime();
-    if (game.t1p1 && game.t1p1_before_rating != null)
-      lastKnown.set(game.t1p1, game.t1p1_before_rating);
-    if (game.t1p2 && game.t1p2_before_rating != null)
-      lastKnown.set(game.t1p2, game.t1p2_before_rating);
-    if (game.t2p1 && game.t2p1_before_rating != null)
-      lastKnown.set(game.t2p1, game.t2p1_before_rating);
-    if (game.t2p2 && game.t2p2_before_rating != null)
-      lastKnown.set(game.t2p2, game.t2p2_before_rating);
+
+    // Update lastKnown with after-ratings for the 4 players in this game
+    for (const id of [game.t1p1, game.t1p2, game.t2p1, game.t2p2]) {
+      const ar = afterRating(i, id);
+      if (id && ar != null) lastKnown.set(id, ar);
+    }
 
     const sorted = [...lastKnown.entries()].sort((a, b) => b[1] - a[1]);
     const point: Record<string, number> = { time };
@@ -337,19 +352,12 @@ function buildRankingTimeline(
     snapshots.push(point);
   }
 
-  // Final snapshot: current ratings from players table (after last game)
-  const currentRatingMap = new Map(players.map((p) => [p.id, p.rating]));
-  const allIds = new Set([...lastKnown.keys(), ...currentRatingMap.keys()]);
-  const finalRatings = new Map<string, number>();
-  allIds.forEach((id) => {
-    finalRatings.set(id, currentRatingMap.get(id) ?? lastKnown.get(id) ?? 1200);
-  });
-  const finalSorted = [...finalRatings.entries()].sort((a, b) => b[1] - a[1]);
-  const finalPoint: Record<string, number> = { time: Date.now() };
-  finalSorted.slice(0, TOP_N).forEach(([id], idx) => {
-    finalPoint[id] = idx + 1;
-  });
-  snapshots.push(finalPoint);
+  // Extend ribbons to now by copying the last snapshot's rankings
+  if (snapshots.length > 0) {
+    const last = snapshots[snapshots.length - 1];
+    const nowPoint: Record<string, number> = { ...last, time: Date.now() };
+    snapshots.push(nowPoint);
+  }
 
   return snapshots;
 }
