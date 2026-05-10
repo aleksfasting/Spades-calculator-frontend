@@ -16,9 +16,10 @@ import {
   hasRoundProgress,
 } from '../../helpers/math/spadesMath';
 import { getPlayersByIds } from '../../services';
+import { teamWinProbability } from '../../helpers/math/eloMath';
 
 import PlayerSlotField from './PlayerSlotField';
-import { Button, SimpleGrid, Center, Text } from '../ui';
+import { Button, SimpleGrid, Center, Text, Box, Spinner } from '../ui';
 import {
   initialNames,
   normalizeNames,
@@ -77,6 +78,8 @@ function NameForm() {
   );
   const [pickerSlot, setPickerSlot] = useState<SlotKey | null>(null);
   const [shortcutHint, setShortcutHint] = useState<string | null>(null);
+  const [winProbability, setWinProbability] = useState<{ team1: number; team2: number } | null>(null);
+  const [isProbabilityLoading, setIsProbabilityLoading] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -165,6 +168,45 @@ function NameForm() {
       : SLOT_KEYS.filter((k) => k !== pickerSlot)
           .map((k) => normalizePlayerName(formik.values[k]))
           .filter(Boolean);
+
+  const { t1p1Name, t1p2Name, t2p1Name, t2p2Name } = formik.values;
+
+  useEffect(() => {
+    const playerNames = [t1p1Name, t1p2Name, t2p1Name, t2p2Name];
+    const allFilled = playerNames.every(Boolean);
+    const allUnique = new Set(playerNames).size === 4;
+
+    if (!allFilled || !allUnique) {
+      setWinProbability(null);
+      return;
+    }
+
+    let cancelled = false;
+    setIsProbabilityLoading(true);
+
+    getPlayersByIds(playerNames)
+      .then((players) => {
+        if (cancelled) return;
+        const getRating = (id: string) =>
+          players.find((p) => p.id === id)?.rating ?? 1200;
+        const prob = teamWinProbability(
+          [getRating(t1p1Name), getRating(t1p2Name)],
+          [getRating(t2p1Name), getRating(t2p2Name)],
+        );
+        setWinProbability({ team1: prob, team2: 1 - prob });
+        setIsProbabilityLoading(false);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setWinProbability(null);
+          setIsProbabilityLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [t1p1Name, t1p2Name, t2p1Name, t2p2Name]);
 
   const handlePickPlayer = (player: SavedPlayer) => {
     if (!pickerSlot) return;
@@ -388,6 +430,67 @@ function NameForm() {
             </Button>
           </Center>
         )}
+
+        
+        {isProbabilityLoading && (
+          <Center mb={4}>
+            <Spinner size="sm" />
+          </Center>
+        )}
+
+        {!isProbabilityLoading && winProbability && (
+          <Box mb={4} px={2}>
+            <Text
+              fontSize="xs"
+              textAlign="center"
+              mb={1}
+              style={{ opacity: 0.6 }}
+            >
+              Win probability
+            </Text>
+            <div
+              style={{
+                display: 'flex',
+                borderRadius: 'var(--app-radius-md)',
+                overflow: 'hidden',
+                height: '32px',
+              }}
+            >
+              <div
+                style={{
+                  width: `${(winProbability.team1 * 100).toFixed(0)}%`,
+                  backgroundColor: 'var(--app-team1)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 'var(--app-font-sm)',
+                  fontWeight: 'bold',
+                  color: 'var(--app-bg)',
+                  transition: 'width 0.4s ease',
+                }}
+              >
+                {(winProbability.team1 * 100).toFixed(0)}%
+              </div>
+              <div
+                style={{
+                  width: `${(winProbability.team2 * 100).toFixed(0)}%`,
+                  backgroundColor: 'var(--app-team2)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 'var(--app-font-sm)',
+                  fontWeight: 'bold',
+                  color: 'var(--app-bg)',
+                  transition: 'width 0.4s ease',
+                }}
+              >
+                {(winProbability.team2 * 100).toFixed(0)}%
+              </div>
+            </div>
+          </Box>
+        )}
+
+
       </form>
     </>
   );
