@@ -28,6 +28,15 @@ function computeNewRating(old: number, actual: number, expected: number): number
   return old + K * (actual - expected);
 }
 
+export function teamWinProbability(
+  team1Ratings: [number, number],
+  team2Ratings: [number, number],
+): number {
+  const t1Avg = teamAvg(team1Ratings[0], team1Ratings[1]);
+  const t2Avg = teamAvg(team2Ratings[0], team2Ratings[1]);
+  return expectedScore(t1Avg, t2Avg);
+}
+
 export function calculateEloDeltas(
   team1: [PlayerRating, PlayerRating],
   team2: [PlayerRating, PlayerRating],
