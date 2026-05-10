@@ -11,10 +11,11 @@ import type { Round } from '../../types';
 interface RecordRankedGameModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess: () => void;
   roundHistory: Round[];
 }
 
-type ModalStatus = 'loading' | 'idle' | 'submitting' | 'success' | 'error';
+type ModalStatus = 'loading' | 'idle' | 'submitting' | 'error';
 
 interface PreviewDeltas {
   team1Results: [EloResult, EloResult];
@@ -29,6 +30,7 @@ function formatDelta(delta: number): string {
 function RecordRankedGameModal({
   isOpen,
   onClose,
+  onSuccess,
   roundHistory,
 }: RecordRankedGameModalProps) {
   const [status, setStatus] = useState<ModalStatus>('loading');
@@ -146,7 +148,7 @@ function RecordRankedGameModal({
         roundHistory,
       });
 
-      setStatus('success');
+      onSuccess();
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : 'An error occurred');
       setStatus('error');
@@ -181,13 +183,7 @@ function RecordRankedGameModal({
     <AppModal
       isOpen={isOpen}
       onClose={() => handleClose()}
-      title={
-        status === 'success'
-          ? 'Game Recorded!'
-          : status === 'error'
-            ? 'Error'
-            : 'Record as Ranked'
-      }
+      title={status === 'error' ? 'Error' : 'Record as Ranked'}
     >
       {(status === 'loading' || status === 'submitting') && (
         <Flex justify="center" align="center" py={8}>
@@ -271,15 +267,6 @@ function RecordRankedGameModal({
             </Button>
             <Button onClick={handleConfirm}>Confirm</Button>
           </Flex>
-        </Box>
-      )}
-
-      {status === 'success' && (
-        <Box p={4} textAlign="center">
-          <Text mb={4}>
-            Game successfully recorded. Ratings have been updated.
-          </Text>
-          <Button onClick={handleClose}>Close</Button>
         </Box>
       )}
 

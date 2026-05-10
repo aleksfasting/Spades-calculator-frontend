@@ -143,9 +143,6 @@ const Header = () => {
                     ? () => {
                         setIsRankedModalOpen(true);
                         setIsMenuOpen(false);
-                        setRoundHistory([]);
-                        resetCurrentRound();
-                        navigate('/leaderboard');
                       }
                     : undefined
                 }
@@ -194,6 +191,12 @@ const Header = () => {
       <RecordRankedGameModal
         isOpen={isRankedModalOpen}
         onClose={() => setIsRankedModalOpen(false)}
+        onSuccess={() => {
+          setIsRankedModalOpen(false);
+          setRoundHistory([]);
+          resetCurrentRound();
+          navigate('/leaderboard');
+        }}
         roundHistory={roundHistory}
       />
     </Box>
