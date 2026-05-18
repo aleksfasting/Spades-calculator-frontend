@@ -6,6 +6,8 @@ export enum TeamDisplayName {
   Team2 = 'Team 2',
 }
 
+export const BAGS_PER_TEAM = 8;
+
 export const possibleBids = [
   'Blind Nil',
   'Nil',

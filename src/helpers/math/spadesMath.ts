@@ -1,4 +1,5 @@
 import {
+  BAGS_PER_TEAM,
   BLIND_NIL,
   NIL,
   TAKES_BAGS,
@@ -508,9 +509,9 @@ function addRounds(
 ) {
   let teamScore = prev.teamScore + roundScore.teamScore;
   let teamBags = prev.teamBags + roundScore.teamBags;
-  if (teamBags >= 10) {
+  if (teamBags >= BAGS_PER_TEAM) {
     teamScore -= 100;
-    teamBags -= 10;
+    teamBags -= BAGS_PER_TEAM;
   }
   return { teamScore, teamBags };
 }

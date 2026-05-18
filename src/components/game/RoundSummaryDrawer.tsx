@@ -1,5 +1,9 @@
 import { SimpleGrid, Text, Stack } from '../ui';
-import { team1Styles, team2Styles } from '../../helpers/utils/constants';
+import {
+  BAGS_PER_TEAM,
+  team1Styles,
+  team2Styles,
+} from '../../helpers/utils/constants';
 import { MoveRight } from 'lucide-react';
 import RoundSummaryField from './RoundSummaryField';
 import RoundSummarySubHeading from './RoundSummarySubHeading';
@@ -55,7 +59,7 @@ function RoundSummaryDrawer({
     const setPenalty = stats.setPenalty || 0;
     const nilPenalty = stats.nilPenalty || 0;
     const blindNilPenalty = stats.blindNilPenalty || 0;
-    const bagsTaken = endBags - startBags + (bagPenalty > 0 ? 10 : 0);
+    const bagsTaken = endBags - startBags + (bagPenalty > 0 ? BAGS_PER_TEAM : 0);
     const hasPenalties =
       bagPenalty > 0 || setPenalty > 0 || nilPenalty > 0 || blindNilPenalty > 0;
     const totalPointsLost =
