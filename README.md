@@ -1,6 +1,6 @@
 # Spades Calculator
 
-## In order to run the app locally,
+## In order to run the app locally
 
 1. Clone the repository in the directory of your choice.
 2. Open your Terminal and **cd** into the root directory of the project.
