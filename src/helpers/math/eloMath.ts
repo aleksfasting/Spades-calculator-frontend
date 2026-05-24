@@ -21,7 +21,7 @@ function teamAvg(p1: number, p2: number): number {
 }
 
 function expectedScore(ratingA: number, ratingB: number): number {
-  return 1 / (1 + Math.pow(10, (ratingB - ratingA) / 400));
+  return 1 / (1 + Math.pow(10, (ratingB - ratingA) / 200));
 }
 
 function computeNewRating(old: number, actual: number, expected: number): number {
