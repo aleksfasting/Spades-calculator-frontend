@@ -1,5 +1,6 @@
 import type { Names, SavedPlayer } from '../../types';
 import { getLocalStorage, setLocalStorage } from './helperFunctions';
+import { isInternalPlayerId } from './seasons';
 
 const SAVED_PLAYERS_KEY = 'savedPlayers';
 
@@ -65,6 +66,7 @@ export function mergeRemotePlayersIntoPool(
   );
   const next = [...local];
   for (const r of remote) {
+    if (isInternalPlayerId(r.id)) continue;
     const norm = normalizePlayerName(r.id);
     if (!norm || seen.has(norm)) continue;
     seen.add(norm);

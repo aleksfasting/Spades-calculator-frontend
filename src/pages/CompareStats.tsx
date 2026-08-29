@@ -12,12 +12,22 @@ import {
   LabelList,
   Tooltip,
 } from 'recharts';
-import { Container, Box, Flex, Text, Spinner, Button } from '../components/ui';
+import { Container, Box, Flex, Text, Spinner, Button, SeasonSwitcher } from '../components/ui';
 import Header from '../components/ui/Header';
-import { getPlayers, getAllRounds, getAllGames } from '../services';
+import { getPlayers, getAllRounds, getAllGames, getSeasons } from '../services';
 import type { Player, DbRound, DbGame } from '../services';
 import { computePlayerStats } from '../helpers/math/playerStats';
 import type { PlayerStats } from '../helpers/math/playerStats';
+import { useSelectedSeason } from '../helpers/utils/hooks';
+import {
+  CURRENT_SEASON,
+  DEFAULT_RATING,
+  filterGamesForSeason,
+  filterRoundsForSeason,
+  leaderboardForSeason,
+  seasonQuery,
+  type ArchivedSeason,
+} from '../helpers/utils/seasons';
 
 const CHART_GREEN = '#68D391';
 const CHART_RED = '#FC8181';
@@ -421,33 +431,52 @@ function CompareStats() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [allRounds, setAllRounds] = useState<DbRound[]>([]);
   const [allGames, setAllGames] = useState<DbGame[]>([]);
+  const [seasons, setSeasons] = useState<ArchivedSeason[]>([]);
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [sortKey, setSortKey] = useState<SortKey>('rating');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
+  const { season, setSeason } = useSelectedSeason(seasons.map((s) => s.name));
+
   useEffect(() => {
-    Promise.all([getPlayers(), getAllRounds(), getAllGames()])
-      .then(([playerData, roundData, gameData]) => {
+    Promise.all([getPlayers(), getAllRounds(), getAllGames(), getSeasons()])
+      .then(([playerData, roundData, gameData, seasonData]) => {
         setPlayers(playerData);
         setAllRounds(roundData);
         setAllGames(gameData);
+        setSeasons(seasonData);
         setStatus('success');
       })
       .catch(() => setStatus('error'));
   }, []);
 
+  const seasonGames = useMemo(
+    () => filterGamesForSeason(allGames, season, seasons),
+    [allGames, season, seasons],
+  );
+
+  const seasonRounds = useMemo(
+    () => filterRoundsForSeason(allRounds, seasonGames),
+    [allRounds, seasonGames],
+  );
+
+  const seasonPlayers = useMemo(
+    () => leaderboardForSeason(season, seasons, players, allGames),
+    [season, seasons, players, allGames],
+  );
+
   const chartRows = useMemo(() => {
     if (status !== 'success') return [];
-    return players
+    return seasonPlayers
       .map((p) => {
-        const playerRounds = allRounds.filter(
+        const playerRounds = seasonRounds.filter(
           (r) =>
             r.t1p1 === p.id || r.t1p2 === p.id || r.t2p1 === p.id || r.t2p2 === p.id,
         );
         return buildRow(p, playerRounds);
       })
       .sort((a, b) => b.rating - a.rating);
-  }, [players, allRounds, status]);
+  }, [seasonPlayers, seasonRounds, status]);
 
   const rows = useMemo(
     () => sortRows(chartRows, sortKey, sortDir),
@@ -456,8 +485,8 @@ function CompareStats() {
 
   // players is already sorted by rating desc from getPlayers()
   const currentRankMap = useMemo(
-    () => new Map(players.map((p, idx) => [p.id, idx])),
-    [players],
+    () => new Map(seasonPlayers.map((p, idx) => [p.id, idx])),
+    [seasonPlayers],
   );
 
   const colorForPlayer = (id: string): string => {
@@ -466,8 +495,8 @@ function CompareStats() {
   };
 
   const ribbonData = useMemo(
-    () => (status === 'success' ? buildRankingTimeline(allGames, players) : []),
-    [allGames, players, status],
+    () => (status === 'success' ? buildRankingTimeline(seasonGames, seasonPlayers) : []),
+    [seasonGames, seasonPlayers, status],
   );
 
   const topPlayerIds = useMemo(() => {
@@ -596,13 +625,22 @@ function CompareStats() {
       <Header />
 
       <Box mt={6}>
-        <Button variant="outline" size="sm" onClick={() => navigate('/leaderboard')} mb={4}>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => navigate(`/leaderboard${seasonQuery(season)}`)}
+          mb={4}
+        >
           ← Leaderboard
         </Button>
 
-        <Text fontSize="var(--app-font-xl)" fontWeight="bold" mb={6}>
+        <Text fontSize="var(--app-font-xl)" fontWeight="bold" mb={3}>
           Player Comparison
         </Text>
+
+        <Box mb={6}>
+          <SeasonSwitcher seasons={seasons} selected={season} onSelect={setSeason} />
+        </Box>
 
         {status === 'loading' && (
           <Flex justify="center" py={12}>
@@ -613,7 +651,7 @@ function CompareStats() {
         {status === 'error' && (
           <Flex direction="column" align="center" py={12} gap={4}>
             <Text color="red.400">Failed to load stats.</Text>
-            <Button variant="outline" onClick={() => navigate('/leaderboard')}>
+            <Button variant="outline" onClick={() => navigate(`/leaderboard${seasonQuery(season)}`)}>
               Back to Leaderboard
             </Button>
           </Flex>
@@ -621,7 +659,9 @@ function CompareStats() {
 
         {status === 'success' && chartRows.length === 0 && (
           <Text color="gray.400" textAlign="center" py={12}>
-            No ranked games recorded yet.
+            {season === CURRENT_SEASON && seasons.length > 0
+              ? 'No ranked games this season yet.'
+              : 'No ranked games recorded yet.'}
           </Text>
         )}
 
@@ -975,7 +1015,11 @@ function CompareStats() {
                         as="tr"
                         key={row.id}
                         cursor="pointer"
-                        onClick={() => navigate(`/stats/${encodeURIComponent(row.id)}`)}
+                        onClick={() =>
+                          navigate(
+                            `/stats/${encodeURIComponent(row.id)}${seasonQuery(season)}`,
+                          )
+                        }
                         _hover={{ bg: 'whiteAlpha.50' }}
                       >
                         <Box
@@ -1002,7 +1046,7 @@ function CompareStats() {
                         >
                           <Text
                             fontSize="sm"
-                            color={row.rating === 1200 ? 'gray.400' : 'inherit'}
+                            color={row.rating === DEFAULT_RATING ? 'gray.400' : 'inherit'}
                           >
                             {Math.round(row.rating)}
                           </Text>

@@ -1,4 +1,5 @@
 import { useState, useEffect, useContext, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { GlobalContext } from '../context/GlobalContext';
 import {
   isNotDefaultValue,
@@ -24,6 +25,25 @@ import type {
   InputValue,
   SavedPlayer,
 } from '../../types';
+import { CURRENT_SEASON } from './seasons';
+
+export function useSelectedSeason(validNames: string[]) {
+  const [params, setParams] = useSearchParams();
+  const raw = params.get('season');
+  const season =
+    raw && (raw === CURRENT_SEASON || validNames.includes(raw))
+      ? raw
+      : CURRENT_SEASON;
+
+  const setSeason = (name: string) => {
+    const next = new URLSearchParams(params);
+    if (name === CURRENT_SEASON) next.delete('season');
+    else next.set('season', name);
+    setParams(next, { replace: true });
+  };
+
+  return { season, setSeason };
+}
 
 export function useLocalStorage<T>(
   key: string,
