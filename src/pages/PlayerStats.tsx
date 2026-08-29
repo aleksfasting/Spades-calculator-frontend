@@ -12,13 +12,19 @@ import {
   ResponsiveContainer,
   LabelList,
 } from 'recharts';
-import { Container, Box, Flex, Text, Spinner, Button } from '../components/ui';
+import { Container, Box, Flex, Text, Spinner, Button, SeasonSwitcher } from '../components/ui';
 import Header from '../components/ui/Header';
-import { getPlayerRounds, getPlayersByIds } from '../services';
-import type { DbRound } from '../services';
-import type { Player } from '../services';
+import { getPlayerRounds, getPlayersByIds, getSeasons, getAllGames } from '../services';
+import type { DbRound, DbGame, Player } from '../services';
 import { computePlayerStats } from '../helpers/math/playerStats';
 import type { PlayerStats } from '../helpers/math/playerStats';
+import { useSelectedSeason } from '../helpers/utils/hooks';
+import {
+  filterGamesForSeason,
+  filterRoundsForSeason,
+  seasonQuery,
+  type ArchivedSeason,
+} from '../helpers/utils/seasons';
 
 const CHART_GREEN = '#68D391';
 const CHART_RED = '#FC8181';
@@ -165,26 +171,50 @@ function PlayerStatsPage() {
 
   const [rounds, setRounds] = useState<DbRound[]>([]);
   const [player, setPlayer] = useState<Player | null>(null);
+  const [seasons, setSeasons] = useState<ArchivedSeason[]>([]);
+  const [games, setGames] = useState<DbGame[]>([]);
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
 
+  const { season, setSeason } = useSelectedSeason(seasons.map((s) => s.name));
   const decodedId = playerId ? decodeURIComponent(playerId) : '';
 
   useEffect(() => {
     if (!decodedId) return;
 
-    Promise.all([getPlayerRounds(decodedId), getPlayersByIds([decodedId])])
-      .then(([roundData, playerData]) => {
+    Promise.all([
+      getPlayerRounds(decodedId),
+      getPlayersByIds([decodedId]),
+      getSeasons(),
+      getAllGames(),
+    ])
+      .then(([roundData, playerData, seasonData, gameData]) => {
         setRounds(roundData);
         setPlayer(playerData[0] ?? null);
+        setSeasons(seasonData);
+        setGames(gameData);
         setStatus('success');
       })
       .catch(() => setStatus('error'));
   }, [decodedId]);
 
+  const seasonGames = useMemo(
+    () => filterGamesForSeason(games, season, seasons),
+    [games, season, seasons],
+  );
+
+  const seasonRounds = useMemo(
+    () => filterRoundsForSeason(rounds, seasonGames),
+    [rounds, seasonGames],
+  );
+
+  const archived = seasons.find((s) => s.name === season);
+  const displayRating =
+    archived?.rankings.find((r) => r.id === decodedId)?.rating ?? player?.rating;
+
   const stats: PlayerStats | null = useMemo(() => {
     if (!decodedId) return null;
-    return computePlayerStats(decodedId, rounds);
-  }, [decodedId, rounds]);
+    return computePlayerStats(decodedId, seasonRounds);
+  }, [decodedId, seasonRounds]);
 
   const reliabilityPct =
     stats && stats.reliability.total > 0
@@ -205,19 +235,21 @@ function PlayerStatsPage() {
       ? Math.round((stats.blindNils.successful / blindNilTotal) * 100)
       : null;
 
+  const leaderboardPath = `/leaderboard${seasonQuery(season)}`;
+
   return (
     <Container maxW="container.sm" py={4}>
       <Header />
 
       <Box mt={6}>
-        <Button variant="outline" size="sm" onClick={() => navigate('/leaderboard')} mb={4}>
+        <Button variant="outline" size="sm" onClick={() => navigate(leaderboardPath)} mb={4}>
           ← Leaderboard
         </Button>
 
         {!decodedId && (
           <Flex direction="column" align="center" py={12} gap={4}>
             <Text color="red.400">Player not found.</Text>
-            <Button variant="outline" onClick={() => navigate('/leaderboard')}>
+            <Button variant="outline" onClick={() => navigate(leaderboardPath)}>
               Back to Leaderboard
             </Button>
           </Flex>
@@ -232,7 +264,7 @@ function PlayerStatsPage() {
         {decodedId && status === 'error' && (
           <Flex direction="column" align="center" py={12} gap={4}>
             <Text color="red.400">Failed to load player stats.</Text>
-            <Button variant="outline" onClick={() => navigate('/leaderboard')}>
+            <Button variant="outline" onClick={() => navigate(leaderboardPath)}>
               Back to Leaderboard
             </Button>
           </Flex>
@@ -240,18 +272,22 @@ function PlayerStatsPage() {
 
         {decodedId && status === 'success' && (
           <>
-            <Flex align="baseline" gap={3} mb={6}>
+            <Flex align="baseline" gap={3} mb={3} flexWrap="wrap">
               <Text fontSize="var(--app-font-xl)" fontWeight="bold">
                 {decodedId}
               </Text>
-              {player && (
+              {displayRating != null && (
                 <Text color="gray.400" fontSize="sm">
-                  Rating: {Math.round(player.rating)}
+                  Rating: {Math.round(displayRating)}
                 </Text>
               )}
             </Flex>
 
-            {rounds.length === 0 ? (
+            <Box mb={6}>
+              <SeasonSwitcher seasons={seasons} selected={season} onSelect={setSeason} />
+            </Box>
+
+            {seasonRounds.length === 0 ? (
               <Text color="gray.400" textAlign="center" py={12}>
                 No ranked rounds recorded yet.
               </Text>

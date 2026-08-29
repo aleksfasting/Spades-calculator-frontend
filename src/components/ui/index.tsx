@@ -2,6 +2,7 @@ export { default as AppModal } from './AppModal';
 export { default as DealerTag } from './DealerTag';
 
 export { default as Header } from './Header';
+export { default as SeasonSwitcher } from './SeasonSwitcher';
 export { default as ButtonGrid } from './ButtonGrid';
 export * from './box';
 export * from './stack';

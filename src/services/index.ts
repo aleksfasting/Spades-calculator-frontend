@@ -2,8 +2,17 @@ import { supabase } from './supabaseClient';
 import { convertBidToDbValue } from '../helpers/math/spadesMath';
 import type { Round } from '../types';
 import type { DbRound } from '../helpers/math/playerStats';
+import {
+  DEFAULT_RATING,
+  SEASON_META_PREFIX,
+  SEASON_RANK_PREFIX,
+  isInternalPlayerId,
+  isValidSeasonName,
+  parseSeasons,
+  type ArchivedSeason,
+} from '../helpers/utils/seasons';
 
-export type { DbRound };
+export type { DbRound, ArchivedSeason };
 
 export interface Player {
   id: string;
@@ -20,26 +29,76 @@ export interface RecordRankedGameArgs {
   roundHistory: Round[];
 }
 
-export async function getPlayers(): Promise<Player[]> {
-  const { data, error } = await supabase
-    .from('players')
-    .select('*')
-    .order('rating', { ascending: false });
-
+async function fetchPlayerRows(): Promise<Player[]> {
+  const { data, error } = await supabase.from('players').select('*');
   if (error) throw new Error(error.message);
   return (data as Player[]) ?? [];
 }
 
+export async function getPlayers(): Promise<Player[]> {
+  const rows = await fetchPlayerRows();
+  return rows
+    .filter((p) => !isInternalPlayerId(p.id))
+    .sort((a, b) => b.rating - a.rating);
+}
+
 export async function getPlayersByIds(ids: string[]): Promise<Player[]> {
-  if (ids.length === 0) return [];
+  const realIds = ids.filter((id) => id && !isInternalPlayerId(id));
+  if (realIds.length === 0) return [];
 
   const { data, error } = await supabase
     .from('players')
     .select('*')
-    .in('id', ids);
+    .in('id', realIds);
 
   if (error) throw new Error(error.message);
-  return (data as Player[]) ?? [];
+  return ((data as Player[]) ?? []).filter((p) => !isInternalPlayerId(p.id));
+}
+
+export async function getSeasons(): Promise<ArchivedSeason[]> {
+  const rows = await fetchPlayerRows();
+  return parseSeasons(rows);
+}
+
+export async function archiveAndResetLeaderboard(
+  name: string,
+): Promise<ArchivedSeason> {
+  const trimmed = name.trim();
+  if (!trimmed) throw new Error('Season name is required');
+  if (!isValidSeasonName(trimmed)) {
+    throw new Error('Use letters, numbers, spaces, or hyphens');
+  }
+
+  const rows = await fetchPlayerRows();
+  const seasons = parseSeasons(rows);
+  if (seasons.some((s) => s.name.toLowerCase() === trimmed.toLowerCase())) {
+    throw new Error(`Season "${trimmed}" already exists`);
+  }
+
+  const live = rows.filter((p) => !isInternalPlayerId(p.id));
+  const archivedAt = new Date().toISOString();
+  const rankings = [...live].sort((a, b) => b.rating - a.rating);
+
+  const snapshotRows: Player[] = [
+    { id: `${SEASON_META_PREFIX}${trimmed}::${archivedAt}`, rating: 0 },
+    ...rankings.map((p) => ({
+      id: `${SEASON_RANK_PREFIX}${trimmed}::${p.id}`,
+      rating: p.rating,
+    })),
+  ];
+
+  const { error: snapError } = await supabase
+    .from('players')
+    .upsert(snapshotRows, { onConflict: 'id' });
+  if (snapError) throw new Error(snapError.message);
+
+  const { error: resetError } = await supabase.from('players').upsert(
+    live.map((p) => ({ id: p.id, rating: DEFAULT_RATING })),
+    { onConflict: 'id' },
+  );
+  if (resetError) throw new Error(resetError.message);
+
+  return { name: trimmed, archivedAt, rankings };
 }
 
 export async function recordRankedGame(args: RecordRankedGameArgs): Promise<void> {
