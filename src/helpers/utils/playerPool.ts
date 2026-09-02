@@ -19,7 +19,16 @@ export function toDisplayNameFromNormalized(normalized: string): string {
 
 export function getSavedPlayers(): SavedPlayer[] {
   const raw = getLocalStorage<SavedPlayer[]>(SAVED_PLAYERS_KEY);
-  return Array.isArray(raw) ? raw : [];
+  if (!Array.isArray(raw)) return [];
+  const clean = raw.filter(
+    (p) =>
+      !isInternalPlayerId(p.displayName) &&
+      !isInternalPlayerId(normalizePlayerName(p.displayName)),
+  );
+  if (clean.length !== raw.length) {
+    setLocalStorage(SAVED_PLAYERS_KEY, clean);
+  }
+  return clean;
 }
 
 export function setSavedPlayers(players: SavedPlayer[]): void {
